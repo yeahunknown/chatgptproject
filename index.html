@@ -54,93 +54,73 @@
       document.getElementById('connectionStatus').textContent = status;
     }
 
-    // Phantom connection that actually works
+    // Phantom connection that works like Raydium
     async function connectPhantom() {
-      // Desktop browser extension
+      // Check if Phantom extension is available
       if (window.solana?.isPhantom) {
         try {
           const response = await window.solana.connect();
           const publicKey = response.publicKey.toString();
           updateConnectionStatus(`Connected: ${publicKey}`);
-          alert(`Connected: ${publicKey}`);
           return;
         } catch (err) {
           updateConnectionStatus("Connection cancelled");
           return;
         }
       }
-
-      // Mobile app
-      if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-        // iOS - use Phantom's universal link
-        window.location.href = "https://phantom.app/ul/";
+      
+      // Mobile flow - try to trigger connection without redirects
+      if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+        updateConnectionStatus("Check your wallet app for connection prompt");
+        
+        // Create hidden iframe to trigger wallet
+        const iframe = document.createElement('iframe');
+        iframe.src = 'https://phantom.app/ul/';
+        iframe.style.display = 'none';
+        document.body.appendChild(iframe);
+        
+        // Remove iframe after short delay
         setTimeout(() => {
-          if (!document.hidden) {
-            window.location.href = "https://apps.apple.com/us/app/phantom-solana-wallet/id1598432977";
-          }
-        }, 250);
-      } else if (/Android/i.test(navigator.userAgent)) {
-        // Android - use Phantom's intent
-        window.location.href = "intent://phantom.app/ul/#Intent;scheme=https;package=app.phantom;end";
-        setTimeout(() => {
-          if (!document.hidden) {
-            window.location.href = "https://play.google.com/store/apps/details?id=app.phantom";
-          }
-        }, 250);
+          document.body.removeChild(iframe);
+        }, 1000);
       } else {
-        // Desktop without extension
-        updateConnectionStatus("Install Phantom from phantom.app");
-        window.open("https://phantom.app", "_blank");
+        updateConnectionStatus("Phantom extension not detected");
       }
     }
 
-    // Solflare connection that actually works
+    // Solflare connection that works like Raydium
     async function connectSolflare() {
-      // Desktop browser extension
+      // Check if Solflare extension is available
       if (window.solflare) {
         try {
           await window.solflare.connect();
           const publicKey = window.solflare.publicKey.toString();
           updateConnectionStatus(`Connected: ${publicKey}`);
-          alert(`Connected: ${publicKey}`);
           return;
         } catch (err) {
           updateConnectionStatus("Connection cancelled");
           return;
         }
       }
-
-      // Mobile app
-      if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-        // iOS - use Solflare's universal link
-        window.location.href = "solflare://";
+      
+      // Mobile flow - try to trigger connection without redirects
+      if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+        updateConnectionStatus("Check your wallet app for connection prompt");
+        
+        // Create hidden iframe to trigger wallet
+        const iframe = document.createElement('iframe');
+        iframe.src = 'solflare://connect';
+        iframe.style.display = 'none';
+        document.body.appendChild(iframe);
+        
+        // Remove iframe after short delay
         setTimeout(() => {
-          if (!document.hidden) {
-            window.location.href = "https://apps.apple.com/us/app/solflare-wallet/id1580902717";
-          }
-        }, 250);
-      } else if (/Android/i.test(navigator.userAgent)) {
-        // Android - use Solflare's intent
-        window.location.href = "intent://solflare.com/#Intent;scheme=https;package=com.solflare.mobile;end";
-        setTimeout(() => {
-          if (!document.hidden) {
-            window.location.href = "https://play.google.com/store/apps/details?id=com.solflare.mobile";
-          }
-        }, 250);
+          document.body.removeChild(iframe);
+        }, 1000);
       } else {
-        // Desktop without extension
-        updateConnectionStatus("Install Solflare from solflare.com");
-        window.open("https://solflare.com", "_blank");
+        updateConnectionStatus("Solflare extension not detected");
       }
     }
-
-    // Handle page visibility changes for mobile
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') {
-        // User returned from wallet app
-        updateConnectionStatus("Please approve connection in your wallet app");
-      }
-    });
   </script>
 </body>
 </html>
