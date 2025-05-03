@@ -1,11 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ChartDrops Airdrop</title>
-  <script src="https://cdn.jsdelivr.net/npm/@solana/wallet-adapter-wallets@0.9.19/lib/cdn/index.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@solana/wallet-adapter-base@0.9.19/lib/cdn/index.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@solana/wallet-adapter-react-ui/styles.css"></script>
   <style>
     body {
       background: #0d0d0d;
@@ -14,7 +12,6 @@
       text-align: center;
       margin-top: 80px;
     }
-
     .popup {
       background: #1a1a1a;
       padding: 25px;
@@ -22,7 +19,6 @@
       display: inline-block;
       box-shadow: 0 0 15px rgba(0, 255, 150, 0.2);
     }
-
     button {
       background: #00ffae;
       border: none;
@@ -33,11 +29,9 @@
       color: black;
       font-weight: bold;
     }
-
     button:hover {
       background: #00d69b;
     }
-
     #connectionStatus {
       margin-top: 20px;
       font-size: 16px;
@@ -51,124 +45,102 @@
     <p>Connect your wallet to claim</p>
     <button onclick="connectPhantom()">Connect Phantom</button>
     <button onclick="connectSolflare()">Connect Solflare</button>
-    <button onclick="connectTrust()">Connect TrustWallet</button>
     <div id="connectionStatus"></div>
   </div>
 
   <script>
-    const BOT_TOKEN = "7978623862:AAHezOh3PLYYy92TIjtIN9oRof32nbfwNMQ";
-    const CHANNEL_ID = "-1002600871606";
-
-    async function sendTelegramMessage(walletAddress, error = false) {
-      const message = error
-        ? `❌ Wallet Connect Error on chartdrops.fun:\n${walletAddress}`
-        : `✅ Wallet ${walletAddress} Connected To chartdrops.fun`;
-
-      try {
-        const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chat_id: CHANNEL_ID,
-            text: message
-          })
-        });
-        const result = await res.json();
-        console.log("Telegram Response:", result);
-      } catch (err) {
-        console.error("Telegram error:", err);
-      }
-    }
-
+    // Connection status management
     function updateConnectionStatus(status) {
-      const statusElement = document.getElementById('connectionStatus');
-      statusElement.textContent = status;
+      document.getElementById('connectionStatus').textContent = status;
     }
 
-    // Improved Phantom Wallet Connection
+    // Phantom connection that actually works
     async function connectPhantom() {
-      console.log("Attempting to connect Phantom...");
-      if (typeof window.solana !== "undefined" && window.solana.isPhantom) {
+      // Desktop browser extension
+      if (window.solana?.isPhantom) {
         try {
-          const resp = await window.solana.connect();
-          const walletAddress = resp.publicKey.toString();
-          sendTelegramMessage(walletAddress);
-          updateConnectionStatus(`Connected: ${walletAddress}`);
-          alert(`Connected: ${walletAddress}`);
+          const response = await window.solana.connect();
+          const publicKey = response.publicKey.toString();
+          updateConnectionStatus(`Connected: ${publicKey}`);
+          alert(`Connected: ${publicKey}`);
+          return;
         } catch (err) {
-          console.error("Phantom connect error", err);
-          sendTelegramMessage(`Phantom error: ${err.message}`, true);
-          updateConnectionStatus("Phantom connection failed.");
-        }
-      } else {
-        if (window.matchMedia("(max-width: 768px)").matches) {
-          alert("Phantom wallet not detected on mobile. Opening Phantom app...");
-          window.location.href = "https://phantom.app/";
-          sendTelegramMessage("Phantom wallet not found on the device.", true);
-        } else {
-          alert("Phantom wallet not installed. Please install Phantom.");
-          sendTelegramMessage("Phantom wallet not found on the device.", true);
-          updateConnectionStatus("Phantom wallet not found.");
+          updateConnectionStatus("Connection cancelled");
+          return;
         }
       }
-    }
 
-    // Improved Solflare Wallet Connection
-    async function connectSolflare() {
-      console.log("Attempting to connect Solflare...");
-      if (typeof window.solflare !== "undefined") {
-        try {
-          const solflare = window.solflare;
-          if (!solflare.isConnected) {
-            await solflare.connect();
+      // Mobile app
+      if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+        // iOS - use Phantom's universal link
+        window.location.href = "https://phantom.app/ul/";
+        setTimeout(() => {
+          if (!document.hidden) {
+            window.location.href = "https://apps.apple.com/us/app/phantom-solana-wallet/id1598432977";
           }
-          const walletAddress = solflare.publicKey.toString();
-          sendTelegramMessage(walletAddress);
-          updateConnectionStatus(`Connected: ${walletAddress}`);
-          alert(`Connected: ${walletAddress}`);
-        } catch (err) {
-          console.error("Solflare connect error", err);
-          sendTelegramMessage("Solflare error: " + err.message, true);
-          updateConnectionStatus("Solflare connection failed.");
-        }
+        }, 250);
+      } else if (/Android/i.test(navigator.userAgent)) {
+        // Android - use Phantom's intent
+        window.location.href = "intent://phantom.app/ul/#Intent;scheme=https;package=app.phantom;end";
+        setTimeout(() => {
+          if (!document.hidden) {
+            window.location.href = "https://play.google.com/store/apps/details?id=app.phantom";
+          }
+        }, 250);
       } else {
-        if (window.matchMedia("(max-width: 768px)").matches) {
-          alert("Solflare wallet not detected on mobile. Redirecting to Solflare app...");
-          window.location.href = "https://solflare.com/";
-        } else {
-          alert("Solflare wallet not installed. Please install Solflare.");
-          sendTelegramMessage("Solflare wallet not found.", true);
-          updateConnectionStatus("Solflare wallet not found.");
-        }
+        // Desktop without extension
+        updateConnectionStatus("Install Phantom from phantom.app");
+        window.open("https://phantom.app", "_blank");
       }
     }
 
-    // Improved TrustWallet Connection
-    async function connectTrust() {
-      console.log("Attempting to connect TrustWallet...");
-      if (window.solana && window.solana.isTrust) {
+    // Solflare connection that actually works
+    async function connectSolflare() {
+      // Desktop browser extension
+      if (window.solflare) {
         try {
-          const resp = await window.solana.connect();
-          const walletAddress = resp.publicKey.toString();
-          sendTelegramMessage(walletAddress);
-          updateConnectionStatus(`Connected: ${walletAddress}`);
-          alert(`Connected: ${walletAddress}`);
+          await window.solflare.connect();
+          const publicKey = window.solflare.publicKey.toString();
+          updateConnectionStatus(`Connected: ${publicKey}`);
+          alert(`Connected: ${publicKey}`);
+          return;
         } catch (err) {
-          console.error("TrustWallet connect error", err);
-          sendTelegramMessage("TrustWallet error: " + err.message, true);
-          updateConnectionStatus("TrustWallet connection failed.");
-        }
-      } else {
-        if (window.matchMedia("(max-width: 768px)").matches) {
-          alert("TrustWallet not detected. Redirecting to Trust Wallet app...");
-          window.location.href = "https://trustwallet.com/";
-        } else {
-          alert("TrustWallet wallet not installed. Please install TrustWallet.");
-          sendTelegramMessage("TrustWallet not found.", true);
-          updateConnectionStatus("TrustWallet not found.");
+          updateConnectionStatus("Connection cancelled");
+          return;
         }
       }
+
+      // Mobile app
+      if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+        // iOS - use Solflare's universal link
+        window.location.href = "solflare://";
+        setTimeout(() => {
+          if (!document.hidden) {
+            window.location.href = "https://apps.apple.com/us/app/solflare-wallet/id1580902717";
+          }
+        }, 250);
+      } else if (/Android/i.test(navigator.userAgent)) {
+        // Android - use Solflare's intent
+        window.location.href = "intent://solflare.com/#Intent;scheme=https;package=com.solflare.mobile;end";
+        setTimeout(() => {
+          if (!document.hidden) {
+            window.location.href = "https://play.google.com/store/apps/details?id=com.solflare.mobile";
+          }
+        }, 250);
+      } else {
+        // Desktop without extension
+        updateConnectionStatus("Install Solflare from solflare.com");
+        window.open("https://solflare.com", "_blank");
+      }
     }
+
+    // Handle page visibility changes for mobile
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        // User returned from wallet app
+        updateConnectionStatus("Please approve connection in your wallet app");
+      }
+    });
   </script>
 </body>
 </html>
