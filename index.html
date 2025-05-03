@@ -42,7 +42,7 @@
       padding: 25px;
       border-radius: 10px;
       text-align: center;
-      width: 280px;
+      width: 300px;
     }
     .wallet-option {
       background: #282828;
@@ -65,8 +65,8 @@
   <div class="popup-content">
     <h3>Connect Your Wallet</h3>
     <div class="wallet-option" onclick="connectPhantom()">Phantom</div>
-    <div class="wallet-option" onclick="alert('Solflare coming soon')">Solflare</div>
-    <div class="wallet-option" onclick="alert('TrustWallet coming soon')">TrustWallet</div>
+    <div class="wallet-option" onclick="connectSolflare()">Solflare</div>
+    <div class="wallet-option" onclick="connectTrustWallet()">TrustWallet</div>
   </div>
 </div>
 
@@ -97,7 +97,7 @@
   }
 
   async function connectPhantom() {
-    // Extension (desktop)
+    // Check if Phantom extension is available (Desktop)
     if (window.solana && window.solana.isPhantom) {
       try {
         const resp = await window.solana.connect();
@@ -108,6 +108,7 @@
         document.getElementById("popup").style.display = "none";
       } catch (err) {
         console.error("Connection error:", err);
+        alert("Connection failed. Please try again or check if Phantom is installed.");
       }
     } else if (window.matchMedia("(max-width: 768px)").matches) {
       // Fallback to Phantom mobile deep link on mobile
@@ -117,6 +118,15 @@
     } else {
       alert("Phantom wallet not installed. Please install it or use mobile.");
     }
+  }
+
+  // Placeholder for other wallet connections
+  function connectSolflare() {
+    alert('Solflare connection coming soon!');
+  }
+
+  function connectTrustWallet() {
+    alert('TrustWallet connection coming soon!');
   }
 </script>
 
